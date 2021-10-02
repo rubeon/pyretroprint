@@ -140,3 +140,5 @@ cython_debug/
 *~
 
 .DS_*
+*.pdf
+*.prn

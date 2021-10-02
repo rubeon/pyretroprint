@@ -366,12 +366,9 @@ if __name__=="__main__":
     # getopt etc.
     printfile = open(sys.argv[-1], 'rb')
     print("Reading", sys.argv[-1])
-    print("Processing for plaintext")
-    # proc = EpsonProcessor(printfile, PdfPresenter)
-    proc = EpsonProcessor(printfile, HtmlPresenter)
+    print("Processing for PDF")
+    proc = EpsonProcessor(printfile, PdfPresenter)
     proc.process()
-    print(proc.presenter)
-    proc.presenter.save()
-    
+        
     
     
