@@ -42,3 +42,6 @@ hard-copy.
 
 The same goes for your old term paper, your 80s diary, or anything else you
 might have on a computer or piece of software specced out before 1990.
+
+[awplus]:https://www.atarimagazines.com/compute/issue72/review_atariwriter_plus.php
+[pip]:https://pypi.org/
