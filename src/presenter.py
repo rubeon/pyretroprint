@@ -40,6 +40,10 @@ class BasePresenter(object):
     linespacing = 1
     font_height = 8
     page_lines = None
+    superscript = False
+    subscript = False
+    underline = False
+
 
     font_state = {
         "bold": False,
@@ -198,6 +202,11 @@ class PlainTextPresenter(BasePresenter):
             self.add_text(color.BOLD)
         else:
             self.add_text(color.END)
+    def set_condensed(self, value):
+        """
+        """
+        logger.debug("plaintext::set_condensed entered with %s (n/a/)", value)
+        return
 
     def set_underline(self, value):
         """
@@ -289,10 +298,8 @@ class PdfPresenter(BasePresenter):
         self.ctx.select_font_face(self.font_family)
         self.ctx.set_font_size(self.font_size)
         self.ctx.set_source_rgb(0, 0, 0)
-        self.line_height = self.default_line_height
-        
+        self.line_height = self.default_line_height        
         self.home()
-        
         print(self.x, self.y)
 
     def set_font_size(self, size):
@@ -369,14 +376,30 @@ class PdfPresenter(BasePresenter):
             self.newline()
             self.carriage_return()
             self.linefeed()
+        scale_modifier = 1.0
+        if self.superscript:
+            # move up a litte
+            y_modifier = self.font_size/-3
+        elif self.subscript:
+            y_modifier = self.font_size/3 # self.font_size
+        else:
+            y_modifier = 0
 
         self.ctx.save()
-        self.ctx.move_to(self.page.margin_l + self.x, self.page.margin_t + self.y + self.font_size)
+        self.ctx.move_to(self.page.margin_l + self.x, self.page.margin_t + self.y + self.font_size + y_modifier)
         self.ctx.scale(self.stretch_x, self.stretch_y)
         self.ctx.show_text(text)
+        if self.underline:
+            # draw a line there...
+            start_y = self.y + self.font_size * 1.2 # just an estimate
+            start_x = self.x
+            self.ctx.move_to(start_x, start_y)
+            self.ctx.line_to(start_x + x_advance, start_y)
+            self.ctx.set_line_width(0.2)
+            self.ctx.stroke()
         self.ctx.restore()
         self.x = self.x + x_advance
-        logger.debug("T:'%s' x:%s, y:%s p:%s x_adv: %s b:'%s' l:%s ln:%s/%s lsp:%s x<->:%s y<->:%s" % (text, int(self.x), int(self.y), self.proportional, int(x_advance), self.bold, self.line_height, self.cur_line, self.page_lines, self.linespacing, self.stretch_x, self.stretch_y))
+        logger.debug("T:'%s' x:%s, y:%s p:%s x_adv: %s b:'%s' l:%s ln:%s/%s lsp:%s x<->:%s y<->:%s sm:%s sub:%s sup:%s" % (text, int(self.x), int(self.y), self.proportional, int(x_advance), self.bold, self.line_height, self.cur_line, self.page_lines, self.linespacing, self.stretch_x, self.stretch_y, scale_modifier, self.superscript, self.subscript))
 
     def get_x_advance(self, text, proportional=True):
         """
@@ -427,7 +450,6 @@ class PdfPresenter(BasePresenter):
 
     def set_underline(self, value):
         self.underline = value
-        self.set_font()        
 
     def set_bold(self, value):
         self.bold = value

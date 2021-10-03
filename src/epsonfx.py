@@ -65,6 +65,7 @@ class EpsonProcessor(object):
         "p": 1,
         "3": 1,
         "-": 1,
+        "S": 1,
         "D": None, # NUL terminated
         
     }
@@ -140,6 +141,9 @@ class EpsonProcessor(object):
             return
         elif command == "T":
             msg = "Cancel super-/subscript"
+            self.set_supersub(-1)
+            return
+            
         elif command == "P":
             msg = "Select 10.5-point, 10-cpi"
             self.set105_10cpi()
@@ -181,7 +185,10 @@ class EpsonProcessor(object):
             msg = "Set tabs"
             self.set_tabs(params)
             return
-            
+        elif command == "S":
+            msg = "Select superscript/subscript printing"
+            self.set_supersub(params[0])
+            return
         else:
             msg = "ESC %s not handled" % command
         logger.debug("Not handled: ESC %s %s %s", command, params, msg)
@@ -201,6 +208,24 @@ class EpsonProcessor(object):
         """
         """
         logger.debug("epson::set_tabs entered")
+
+    def set_supersub(self, value):
+        """
+        """
+        logger.debug("epson::set_supersub entered with %s", value)
+        if value in [1, 49]:
+            logger.debug("epson::set_supersub setting super")
+            self.presenter.superscript = True
+            self.presenter.subscript = False
+            return
+        if value in [0, 48]:
+            logger.debug("epson::set_supersub setting sub")
+            self.presenter.subscript = True 
+            self.presenter.superscript = False 
+            return
+        
+        self.presenter.superscript = False            
+        self.presenter.subscript = False
 
     def master_select(self, value):
         """
@@ -251,7 +276,10 @@ class EpsonProcessor(object):
     
     def set_underline(self, value):
         logger.debug("epson::set_underline entered")
-        self.presenter.set_underline(value)    
+        if value in [1,49]:
+            self.presenter.set_underline(True)
+        else:
+            self.presenter.set_underline(False)
     
     def select_intl_charset(self, charset):
         """
