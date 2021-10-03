@@ -244,7 +244,7 @@ class PdfPresenter(BasePresenter):
     """
     PDF-Based presenter
     """
-    default_font_family = "monospace"
+    default_font_family = "Courier New"
     default_font_size = 8
     default_line_height = 8
     default_proportional = True
@@ -393,12 +393,16 @@ class PdfPresenter(BasePresenter):
         
     def set_font(self):
         logger.debug("pdf::set_font entered")
-        args = []
-        args.append(self.font_family)
-        args.append(self.italic and cairo.FONT_SLANT_ITALIC or cairo.FONT_SLANT_NORMAL)
-        args.append(self.bold and cairo.FONT_WEIGHT_BOLD or cairo.FONT_WEIGHT_NORMAL)
-        logger.debug("font settings: %s", args)
-        self.ctx.select_font_face(*args)
+        if self.italic:
+            slant =  cairo.FONT_SLANT_ITALIC
+        else:
+            slant = cairo.FONT_SLANT_NORMAL
+        
+        if self.bold:
+            weight = cairo.FONT_WEIGHT_BOLD
+        else:
+            weight = cairo.FONT_SLANT_NORMAL
+        self.ctx.select_font_face(self.font_family, slant, weight)
         logger.debug("font_size: %s", self.font_size)
         self.ctx.set_font_size(self.font_size)
         self.ctx.set_source_rgb(0, 0, 0)
