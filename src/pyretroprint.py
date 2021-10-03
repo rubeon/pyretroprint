@@ -48,7 +48,7 @@ def main():
     if args.input:
         fdin = open(args.input, 'rb')
     else:
-        fdin = sys.stdin
+        fdin = open(0, 'rb') # stdin
     outfile = args.output or 'default.pdf'
     
     

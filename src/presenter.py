@@ -75,6 +75,11 @@ class BasePresenter(object):
         """
         raise NotImplementedError
 
+    def set_font_size(self, *args):
+        """
+        """
+        raise NotImplementedError
+
 
     def set_low_quality(self, enable):
         """
@@ -87,6 +92,12 @@ class BasePresenter(object):
         """
         self.bold = value
     
+    def newline(self):
+        """
+        """
+        self.carriage_return()
+        self.linefeed()
+
     def set_italic(self, value):
         """
         """
@@ -147,17 +158,21 @@ class PlainTextPresenter(BasePresenter):
     """
     Prints text with no formatting codes, just basic margins
     """
-
+    outfile = None
 
     page_width = 72    
     
     def __init__(self, **kwargs):
         """
         """
+        self.outfile = kwargs.get('outfile', sys.stdout)
         size = kwargs.get("size", self.default_page_size)
         self.new_page(size)        
         self.separator = kwargs.get("separator", "\f")
-    
+
+    def __del__(self):
+        self.outfile.write(str(self))
+
     def new_page(self, size):
         new_page = None
         if size == "Letter":
@@ -205,12 +220,20 @@ class PlainTextPresenter(BasePresenter):
         """
         """
         self.add_text("\n")
+
+    def carriage_return(self):
+        self.add_text("\r")
     
     def set_linespacing(self, linespacing):
         """
         set my linespacing in points
         """
         self.linespacing = self.linespacing
+    
+    def set_font_size(self, *args):
+        """
+        """
+        pass
         
 class TerminalPresenter(BasePresenter):
     """
