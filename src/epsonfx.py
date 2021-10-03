@@ -228,7 +228,7 @@ class EpsonProcessor(object):
     def set_condensed(self, value):
         """
         """
-        logger.debug("epson::set_condensed entered")
+        logger.debug("epson::set_condensed entered with %s", value)
         self.presenter.set_condensed(value)
         
     def set105_10cpi(self):
@@ -397,7 +397,11 @@ class EpsonProcessor(object):
                 self.presenter.newline()
                 [f(False) for f in self.clear_on_line]
                 self.clear_on_line = []
-                
+            elif byte == b'\x0f':
+                logger.debug("XXX: SETTING CONDENSED")
+                self.set_condensed(True)
+            elif byte == b'\x12':
+                self.set_condensed(False)
             else:
                 self.handle_byte(byte)
  

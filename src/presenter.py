@@ -376,7 +376,7 @@ class PdfPresenter(BasePresenter):
         self.ctx.show_text(text)
         self.ctx.restore()
         self.x = self.x + x_advance
-        logger.debug("T:'%s' x:%s, y:%s p:%s x_adv: %s b:'%s' l:%s ln:%s/%s lsp:%s" % (text, int(self.x), int(self.y), self.proportional, int(x_advance), self.bold, self.line_height, self.cur_line, self.page_lines, self.linespacing))
+        logger.debug("T:'%s' x:%s, y:%s p:%s x_adv: %s b:'%s' l:%s ln:%s/%s lsp:%s x<->:%s y<->:%s" % (text, int(self.x), int(self.y), self.proportional, int(x_advance), self.bold, self.line_height, self.cur_line, self.page_lines, self.linespacing, self.stretch_x, self.stretch_y))
 
     def get_x_advance(self, text, proportional=True):
         """
@@ -447,7 +447,8 @@ class PdfPresenter(BasePresenter):
         logger.debug("chrst: %s", value)
 
     def set_condensed(self, value):
-        self.stretch_x = value and 0.8 or 1.0
+        logger.debug("pdf::set_condensed entered with %s", value)
+        self.stretch_x = value and 0.5 or 1.0
 
 class HtmlPresenter(BasePresenter):
     default_font_family = "monospace"
