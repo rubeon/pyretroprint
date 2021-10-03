@@ -33,6 +33,7 @@ class EpsonProcessor(object):
     """
     esc/p and esc/p 2 processor
     """
+    clear_on_line = []
     escape_state = None
     commands = {
         "%": {
@@ -243,7 +244,10 @@ class EpsonProcessor(object):
 
     def set_double_width(self, value):
         logger.debug("epson::set_double_width entered")
-        self.presenter.stretch_x = 2.0
+        if value:
+            self.presenter.stretch_x = 2.0
+        else:
+            self.presenter.stretch_x = 1.0
     
     def set_underline(self, value):
         logger.debug("epson::set_underline entered")
@@ -375,11 +379,14 @@ class EpsonProcessor(object):
                         if parm == b'\x00':
                             break
                         else:
-                            params.append(parm) 
+                            params.append(parm)
                 self.escape_state = False
                 self.handle_command(byte, params)
             elif byte == b'\x1b':
                 self.handle_escape()
+            elif byte == b'\x0e':
+                self.set_double_width(True)
+                self.clear_on_line.append(self.set_double_width)
             elif self.escape_state:
                 self.escape_state = False
                 self.handle_command(byte)
@@ -388,6 +395,9 @@ class EpsonProcessor(object):
             # check for some control codes
             elif byte == b'\x9b':
                 self.presenter.newline()
+                [f(False) for f in self.clear_on_line]
+                self.clear_on_line = []
+                
             else:
                 self.handle_byte(byte)
  

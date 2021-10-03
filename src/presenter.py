@@ -388,7 +388,7 @@ class PdfPresenter(BasePresenter):
             # update em
             self.em = self.ctx.text_extents("M").width
             res = self.em
-        return res
+        return res * self.stretch_x
         
         
     def set_font(self):
