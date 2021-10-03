@@ -72,11 +72,11 @@ class EpsonProcessor(object):
     
     defined_unit = 72.0 / 60.0 # 1 / 60 in. in points
     
-    def __init__(self, pf, my_presenter):
+    def __init__(self, pf, my_presenter, size="Letter"):
         """
         """
         self.printfile = pf
-        self.presenter = my_presenter()
+        self.presenter = my_presenter # initialized presenter
 
     def handle_command(self, byte, params):
         """
@@ -119,9 +119,11 @@ class EpsonProcessor(object):
             return
         elif command == "C":
             msg = "Set page length in lines"
+            self.set_page_lines(params[0])
+            return
         elif command == "+":
             msg = "Set n/360th in. line spacing"
-            self.set_linespacing(params, 360)
+            self.set_linespacing(params[0], 360)
             return
         elif command == "E":
             msg = "Set the weight attribute of the font to bold"
@@ -143,7 +145,7 @@ class EpsonProcessor(object):
             return
         elif command == "3":
             msg = "Set n/180-inch line spacing"
-            self.set_linespacing(params, 180)
+            self.set_linespacing(params[0], 180)
             return
         elif command == "Y":
             msg = "Set 120 dpi double-speed graphics"
@@ -183,6 +185,12 @@ class EpsonProcessor(object):
             msg = "ESC %s not handled" % command
         logger.debug("Not handled: ESC %s %s %s", command, params, msg)
 
+    def set_page_lines(self, value):
+        """
+        """
+        self.page_lines = value
+        self.presenter.page_lines = value
+
     def handle_escape(self):
         """
         """
@@ -191,11 +199,12 @@ class EpsonProcessor(object):
     def set_tabs(self, params):
         """
         """
-        print("XXX:", params)
+        logger.debug("epson::set_tabs entered")
 
     def master_select(self, value):
         """
         """
+        logger.debug("epson::master_select entered")
         value & 1 and  \
             self.presenter.set_font_width(7.2)  \
             or self.presenter.set_font_width(6) 
@@ -211,26 +220,33 @@ class EpsonProcessor(object):
     def set_lq(self, value):
         """
         """
+        logger.debug("epson::set_lq entered")
         value in [0, 48] and self.presenter.set_low_quality(1)
         value in [1, 49] and self.presenter.set_low_quality(0)
 
     def set_condensed(self, value):
         """
         """
+        logger.debug("epson::set_condensed entered")
         self.presenter.set_condensed(value)
         
     def set105_10cpi(self):
         """
         
         """
+        logger.debug("epson::set105_10cpi entered")
         # 72 points per inch, 10 CPI would be 7.2pts right?
-        self.presenter.set_font_height(10.5)
-        self.presenter.set_font_width(7.2)        
+        self.presenter.set_font_size(10.5)
+        self.presenter.stretch_x = 1.0
+        # self.presenter.set_font_width(7.2)        
+        
 
     def set_double_width(self, value):
-        pass
+        logger.debug("epson::set_double_width entered")
+        self.presenter.stretch_x = 2.0
     
     def set_underline(self, value):
+        logger.debug("epson::set_underline entered")
         self.presenter.set_underline(value)    
     
     def select_intl_charset(self, charset):
@@ -251,58 +267,69 @@ class EpsonProcessor(object):
         13 Korea
         64 Legal
         """
+        logger.debug("epson::set_intl_charset entered")
         self.presenter.set_charset(charset)
         
     def initialize_printer(self):
         """
         """
+        logger.debug("epson::initialize_printer entered")
         self.set_bold(0)
         self.set_proportional(0)
         self.set_italic(0)
         self.defined_unit = 72.0 / 60.0
+        self.presenter.set_font_size(10.5)
 
     def enable_upper(self):
         """
         """
-        pass
+        logger.debug("epson::enable_upper entered")
+        
     def set_proportional(self, value):
         """
         """
-        self.presenter.set_proportional(value)
+        logger.debug("epson::set_proportional entered w/ %s", value)
+        prop = int(value) in [1,49]
+        self.presenter.set_proportional(prop)
 
     def set_italic(self, value):
         """
         """
+        logger.debug("epson::set_italic entered")
         self.presenter.set_italic(value)
     
     def set_lpi(self, value):
         """
         """
-        linespacing = 72/value # value in points
+        logger.debug("epson::set_lpi entered with %s", value)
+        linespacing = 72.0/value # value in points
         self.presenter.set_linespacing(linespacing)
-        
-        
 
     def set_120dpi(self):
         """
         """
         # not really relevant on a virtual printer...
+        logger.debug("epson::set_120dpi entered")
         pass
 
     def set_240dpi(self):
         """
         """
         # not really relevant on a virtual printer...
+        logger.debug("epson::set_240dpi entered")
         pass
         
     def set_bold(self, value):
         """
         """
+        logger.debug("epson::set_bold entered")
         self.presenter.set_bold(value)
     
     def set_hpos(self, params):
         """
         """
+        logger.debug("epson::set_hpos entered")
+        
         nl = params[0]
         nh = params[1]
         
@@ -314,18 +341,20 @@ class EpsonProcessor(object):
         logger.debug("Setting hpos to %s", hpos)
         self.presenter.set_hpos(hpos)
 
-    def set_linespacing(self, params, base):
+    def set_linespacing(self, param, base):
         """
         Sets the line spacing to n/360 inch
         spacing = lines / inch * 2 / 360
         """
-        n = params[0]
+        logger.debug("epson::set_linespacing entered: %s/%s", param, base)
+        n = param
         sp_inches = n / base
         self.presenter.set_linespacing(sp_inches * 72.0) # linespacing in points
 
     def process(self):
         """
         """
+        logger.debug("epson::process entered")
         logger.debug("Processing...")
         while True:
             byte = self.printfile.read(1)
@@ -356,8 +385,12 @@ class EpsonProcessor(object):
                 self.handle_command(byte)
             elif byte == b'':
                 break
+            # check for some control codes
+            elif byte == b'\x9b':
+                self.presenter.newline()
             else:
                 self.handle_byte(byte)
+ 
     def handle_byte(self, byte):
         self.presenter.add_text(byte)
 
@@ -367,8 +400,8 @@ if __name__=="__main__":
     printfile = open(sys.argv[-1], 'rb')
     print("Reading", sys.argv[-1])
     print("Processing for PDF")
-    proc = EpsonProcessor(printfile, PdfPresenter)
+    presenter = PdfPresenter()
+    proc = EpsonProcessor(printfile, presenter, size="Letter")
+    # proc = EpsonProcessor(printfile, PlainTextPresenter)
     proc.process()
-        
-    
-    
+    print(proc.presenter)

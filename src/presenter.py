@@ -9,7 +9,7 @@ logger.setLevel(logging.DEBUG)
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT)
 
-DEFAULT_CHARSET="ISO-8859-1"
+DEFAULT_CHARSET="cp850"
 
 from page import LetterPage, A4Page
 
@@ -39,6 +39,7 @@ class BasePresenter(object):
     cur_page = 0
     linespacing = 1
     font_height = 8
+    page_lines = None
 
     font_state = {
         "bold": False,
@@ -199,12 +200,17 @@ class PlainTextPresenter(BasePresenter):
         workaround for now
         """
         self.add_text(" ")
-        
+    
+    def linefeed(self):
+        """
+        """
+        self.add_text("\n")
+    
     def set_linespacing(self, linespacing):
         """
         set my linespacing in points
         """
-        self.linespacing = int(linespacing / self.font_height)
+        self.linespacing = self.linespacing
         
 class TerminalPresenter(BasePresenter):
     """
@@ -216,21 +222,23 @@ class PdfPresenter(BasePresenter):
     PDF-Based presenter
     """
     default_font_family = "monospace"
-    default_font_size = 10
-    default_line_height = 1.5
-    
+    default_font_size = 8
+    default_line_height = 8
+    default_proportional = True
     condensed = False
     bold = False
     italic = False
-        
-        
+    
     page_list = []
     page_size = None
+    page_lines = 9999
+    cur_line = 0
     cur_page = None
     stretch_x = 1.0
     stretch_y = 1.0
     x = 0
     y = 0
+    linespacing = 2 # 0.25 default font?
     
     def __init__(self, **kwargs):
         """
@@ -239,7 +247,10 @@ class PdfPresenter(BasePresenter):
         self.filename = kwargs.get("filename", "default.pdf")
         self.font_family = self.default_font_family
         self.font_size = self.default_font_size
+        self.proportional = self.default_proportional
         self.page_size = size
+        self.em = 0	# width of em-space
+        self.en = 0 	# width of en-space
 
         if size == "Letter":
             self.page = LetterPage()
@@ -255,27 +266,41 @@ class PdfPresenter(BasePresenter):
         self.ctx.select_font_face(self.font_family)
         self.ctx.set_font_size(self.font_size)
         self.ctx.set_source_rgb(0, 0, 0)
-        self.ps.restrict_to_version(0)
-        self.line_height = self.default_line_height * self.font_size
+        self.line_height = self.default_line_height
         
         self.home()
         
         print(self.x, self.y)
 
+    def set_font_size(self, size):
+        self.font_size = size
+        
+
+    def newline(self):
+        """
+        """
+        self.carriage_return()
+        self.linefeed()
+
     def carriage_return(self):
         """
         """
         self.x = 0   
+        self.cur_line = self.cur_line + 1
+        if self.cur_line and self.cur_line > self.page_lines:
+            logger.debug("carriage_return out of lines %s/%s", self.cur_line, self.page_lines)
+            self.cur_line = 0
+            self.new_page()
         
     def linefeed(self):
         """
         """
-        self.y = self.y +  (self.line_height * self.stretch_y)
+        logger.debug("pdf::linefeed entered")
+        self.y = self.y + self.linespacing + self.line_height * self.stretch_y
         if (self.y + self.page.margin_b) > (self.page.height - self.page.margin_b):
-            print("XXX: linfeed -> NewPage!")
             self.new_page()
-        else:
-            logger.debug("linfeed: y=%s, ph=%s" % (self.y, self.page.height))
+        # else:
+        #     logger.debug("linfeed: y=%s, ph=%s" % (self.y, self.page.height))
         
     def set_hpos(self, pos):
         """
@@ -308,40 +333,63 @@ class PdfPresenter(BasePresenter):
 
         self.set_font()        
 
-        try:
-            self.font_extents = self.ctx.text_extents(text)
-        except:
-            print(text)
-            input("meh")
+        # try:
+        #     self.font_extents = self.ctx.text_extents(text)
+        # except:
+        #     print(text)
+        #     input("meh")
 
-        x_advance = self.stretch_x * self.font_extents.x_advance
+        # x_advance = self.stretch_x * self.font_extents.x_advance
+        x_advance = self.get_x_advance(text)
         
         if (self.x + x_advance > self.page.width - self.page.margin_r):
+            self.newline()
             self.carriage_return()
             self.linefeed()
-        
 
-            
         self.ctx.save()
         self.ctx.move_to(self.page.margin_l + self.x, self.page.margin_t + self.y + self.font_size)
-        print("self.page.margin_t:", self.page.margin_t)
         self.ctx.scale(self.stretch_x, self.stretch_y)
         self.ctx.show_text(text)
         self.ctx.restore()
         self.x = self.x + x_advance
-        logger.debug("x: %s, y:%s" % (self.x, self.y))
-        # self.ctx.move_to(self.x, self.y)
+        logger.debug("T:'%s' x:%s, y:%s p:%s x_adv: %s b:'%s' l:%s ln:%s/%s lsp:%s" % (text, int(self.x), int(self.y), self.proportional, int(x_advance), self.bold, self.line_height, self.cur_line, self.page_lines, self.linespacing))
+
+    def get_x_advance(self, text, proportional=True):
+        """
+        """
+        if proportional and self.proportional:
+            res = self.ctx.text_extents(text).x_advance or \
+                self.ctx.text_extents(" ").x_advance
+        else:
+            # update em
+            self.em = self.ctx.text_extents("M").width
+            res = self.em
+        return res
+        
         
     def set_font(self):
+        logger.debug("pdf::set_font entered")
         args = []
         args.append(self.font_family)
-        args.append(self.bold and cairo.FONT_WEIGHT_BOLD or cairo.FONT_WEIGHT_NORMAL)
         args.append(self.italic and cairo.FONT_SLANT_ITALIC or cairo.FONT_SLANT_NORMAL)
+        args.append(self.bold and cairo.FONT_WEIGHT_BOLD or cairo.FONT_WEIGHT_NORMAL)
+        logger.debug("font settings: %s", args)
         self.ctx.select_font_face(*args)
+        logger.debug("font_size: %s", self.font_size)
+        self.ctx.set_font_size(self.font_size)
+        self.ctx.set_source_rgb(0, 0, 0)
+
+        # calculate em and en
+        self.em = self.get_x_advance("M", proportional=False)
+        logger.debug("EM: %d", self.em)
+        self.en = self.get_x_advance("N", proportional=False)
+        logger.debug("EN: %d", self.em)
             
     def new_page(self):
         """
         """
+        self.cur_line = 0
         self.ctx.show_page()
         self.home()
 
@@ -352,7 +400,8 @@ class PdfPresenter(BasePresenter):
 
     def set_underline(self, value):
         self.underline = value
-        
+        self.set_font()        
+
     def set_bold(self, value):
         self.bold = value
 
@@ -366,8 +415,7 @@ class PdfPresenter(BasePresenter):
             self.ctx.select_font_face("monospace")
 
     def set_linespacing(self, value):
-        self.linespacing = value
-        print("lspc:", value)
+        self.linespacing = value - self.font_size
     
     def save(self):
         self.ctx.show_page()
@@ -403,3 +451,4 @@ class HtmlPresenter(BasePresenter):
     
     def set_linespacing(self, value):
         self.linespacing = value
+        

@@ -1,6 +1,6 @@
 import cairo
 
-DEFAULT_MARGIN = 72 # default margin in points
+DEFAULT_MARGIN = 0 * 72 # 1/4" default margin in points
 
 def pts2mm(pts):
     return float(pts) * 0.352778
@@ -68,4 +68,11 @@ if __name__=="__main__":
     print("width: {}in".format( pts2in(letter.width)))
     print("top margin: {}in".format( pts2in(letter.margin_t)))
     print("bottom margin: {}in".format( pts2in(letter.margin_b)))
+
+    print("Letter page:")
+    print("height: {}mm".format( pts2mm(letter.height)))
+    print("width: {}mm".format( pts2mm(letter.width)))
+    print("top margmm: {}mm".format( pts2in(letter.margin_t)))
+    print("bottom margin: {}in".format( pts2in(letter.margin_b)))
+    
     
