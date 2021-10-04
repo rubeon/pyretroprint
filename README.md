@@ -3,7 +3,7 @@ There are some things it can do:
 
 # PyRetroPrint
 
-![PyRetroPrint, your Atari Print Button!](docs/px/doc2pdf.png)
+![PyRetroPrint, Your Atari Print Button!](https://raw.githubusercontent.com/rubeon/pyretroprint/main/docs/px/doc2pdf.png)
 
 Welcome to PyRetroPrint, your one-stop shop for Reagan-era hardcopy!
 
