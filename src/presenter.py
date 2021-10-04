@@ -167,7 +167,7 @@ class PlainTextPresenter(BasePresenter):
     Prints text with no formatting codes, just basic margins
     """
     outfile = None
-
+    linespacing = 1 # character cells, eh
     page_width = 72    
     
     def __init__(self, **kwargs):
@@ -182,6 +182,7 @@ class PlainTextPresenter(BasePresenter):
         self.outfile.write(str(self))
 
     def new_page(self, size):
+        logger.debug("pdf::new_page entered with %s", size)
         new_page = None
         if size == "Letter":
             new_page = LetterPage()
@@ -266,13 +267,14 @@ class PdfPresenter(BasePresenter):
     PDF-Based presenter
     """
     default_font_family = "Courier New"
+    authentic = True
     default_font_size = 8
     default_line_height = 8
     default_proportional = True
     condensed = False
     bold = False
     italic = False
-    
+    font_width = None    
     page_list = []
     page_size = None
     page_lines = 9999
@@ -282,7 +284,7 @@ class PdfPresenter(BasePresenter):
     stretch_y = 1.0
     x = 0
     y = 0
-    linespacing = 120 # 0.25 default font?
+    linespacing = 72.0 / 6.0 # defaults to 1/"
     
     def __init__(self, **kwargs):
         """
@@ -312,7 +314,7 @@ class PdfPresenter(BasePresenter):
         self.ctx.set_source_rgb(0, 0, 0)
         self.line_height = self.default_line_height        
         self.home()
-        print(self.x, self.y)
+        # print(self.x, self.y)
 
     def set_font_size(self, size):
         self.font_size = size
@@ -338,11 +340,9 @@ class PdfPresenter(BasePresenter):
         """
         """
         logger.debug("pdf::linefeed entered")
-        self.y = self.y + self.linespacing + self.line_height * self.stretch_y
+        self.y = self.y + self.linespacing * self.stretch_y # + self.line_height * self.stretch_y
         if (self.y + self.page.margin_b) > (self.page.height - self.page.margin_b):
             self.new_page()
-        # else:
-        #     logger.debug("linfeed: y=%s, ph=%s" % (self.y, self.page.height))
         
     def set_hpos(self, pos):
         """
@@ -432,11 +432,12 @@ class PdfPresenter(BasePresenter):
             slant =  cairo.FONT_SLANT_ITALIC
         else:
             slant = cairo.FONT_SLANT_NORMAL
-        
+                    
         if self.bold:
             weight = cairo.FONT_WEIGHT_BOLD
         else:
             weight = cairo.FONT_SLANT_NORMAL
+        
         self.ctx.select_font_face(self.font_family, slant, weight)
         logger.debug("font_size: %s", self.font_size)
         self.ctx.set_font_size(self.font_size)
@@ -451,6 +452,7 @@ class PdfPresenter(BasePresenter):
     def new_page(self):
         """
         """
+        logger.debug("pdf::new_page entered")
         self.cur_line = 0
         self.ctx.show_page()
         self.home()
@@ -480,7 +482,9 @@ class PdfPresenter(BasePresenter):
 
     def set_linespacing(self, value):
         logger.debug("pdf::set_linespacing entered with %s", value)
-        self.linespacing = value - self.font_size + 2
+        # self.linespacing = value - self.font_size + 2
+        self.linespacing = value
+        self.line_height = self.font_size
     
     def save(self):
         self.ctx.show_page()

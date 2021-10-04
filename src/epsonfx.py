@@ -81,6 +81,7 @@ class EpsonProcessor(object):
         """
         self.printfile = pf
         self.presenter = my_presenter # initialized presenter
+        self.initialize_printer()
 
     def handle_command(self, byte, params):
         """
@@ -151,8 +152,8 @@ class EpsonProcessor(object):
             self.set105_10cpi()
             return
         elif command == "3":
-            msg = "Set n/180-inch line spacing"
-            self.set_linespacing(params[0], 180)
+            msg = "Set n/216-inch line spacing"
+            self.set_linespacing(params[0], 216)
             return
         elif command == "Y" or command == "L":
             msg = "Set 120 dpi double-speed graphics"
@@ -264,7 +265,7 @@ class EpsonProcessor(object):
         """
         logger.debug("epson::set105_10cpi entered")
         # 72 points per inch, 10 CPI would be 7.2pts right?
-        self.presenter.set_font_size(12)
+        self.presenter.set_font_size(10.5)
         self.presenter.stretch_x = 1.0
         self.presenter.set_font_width(7.2)        
         
@@ -312,8 +313,8 @@ class EpsonProcessor(object):
         self.set_proportional(0)
         self.set_italic(0)
         self.defined_unit = 72.0 / 60.0
-        self.presenter.set_font_size(12)
-        self.set_linespacing(1,6)
+        self.presenter.set_font_size(10.5)
+        self.set_linespacing(1, 6)
 
     def enable_upper(self):
         """
@@ -371,13 +372,13 @@ class EpsonProcessor(object):
 
     def set_linespacing(self, param, base):
         """
-        Sets the line spacing to n/360 inch
-        spacing = lines / inch * 2 / 360
+        Sets the line spacing in points on the presenter
         """
         logger.debug("epson::set_linespacing entered: %s/%s", param, base)
         n = param
         sp_inches = n / base
         logger.debug("sp_inches = %s", sp_inches)
+        # self.set_lpi(sp_inches)
         self.presenter.set_linespacing(sp_inches * 72.0) # linespacing in points
 
     def process(self):
