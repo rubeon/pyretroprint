@@ -264,9 +264,9 @@ class EpsonProcessor(object):
         """
         logger.debug("epson::set105_10cpi entered")
         # 72 points per inch, 10 CPI would be 7.2pts right?
-        self.presenter.set_font_size(10.5)
+        self.presenter.set_font_size(12)
         self.presenter.stretch_x = 1.0
-        # self.presenter.set_font_width(7.2)        
+        self.presenter.set_font_width(7.2)        
         
 
     def set_double_width(self, value):
@@ -312,7 +312,8 @@ class EpsonProcessor(object):
         self.set_proportional(0)
         self.set_italic(0)
         self.defined_unit = 72.0 / 60.0
-        self.presenter.set_font_size(10.5)
+        self.presenter.set_font_size(12)
+        self.set_linespacing(1,6)
 
     def enable_upper(self):
         """
@@ -336,7 +337,7 @@ class EpsonProcessor(object):
         """
         """
         logger.debug("epson::set_lpi entered with %s", value)
-        linespacing = 72.0/value # value in points
+        linespacing = 72.0/value  # value in points
         self.presenter.set_linespacing(linespacing)
 
     def set_dpi(self, value):
@@ -376,6 +377,7 @@ class EpsonProcessor(object):
         logger.debug("epson::set_linespacing entered: %s/%s", param, base)
         n = param
         sp_inches = n / base
+        logger.debug("sp_inches = %s", sp_inches)
         self.presenter.set_linespacing(sp_inches * 72.0) # linespacing in points
 
     def process(self):
