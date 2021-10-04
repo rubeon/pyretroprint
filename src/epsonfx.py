@@ -68,6 +68,7 @@ class EpsonProcessor(object):
         "S": 1,
         "L": "NLDK",
         "Y": "NLDK",
+        "Z": "NLDK",
         "D": None, # NUL terminated
         
     }
@@ -156,7 +157,7 @@ class EpsonProcessor(object):
             return
         elif command == "Y" or command == "L":
             msg = "Set 120 dpi double-speed graphics"
-            self.set_dpi(120)
+            self.set_dpi(120, params)
             return
         elif command == "4":
             msg = "Set italic"
@@ -172,8 +173,8 @@ class EpsonProcessor(object):
             return
     
         elif command == "Z":
-            msg = "Set 240 dpi graphics"
-            self.set_dpi(240)
+            msg = "Set 240 dpi graphics %s bytes" % (len(params))
+            self.set_dpi(240, params)
             return
         elif command == "5":
             msg = "Cancel italic"
@@ -340,12 +341,15 @@ class EpsonProcessor(object):
         linespacing = 72.0/value  # value in points
         self.presenter.set_linespacing(linespacing)
 
-    def set_dpi(self, value):
+    def set_dpi(self, value, params):
         """
         """
         # not really relevant on a virtual printer...
         logger.debug("epson::set_dpi entered with %s", value)
         self.presenter.dpi = value
+        logger.debug("%s bytes of data for %s", len(params), value)
+        if len(params):
+            logger.debug("%s...%s", params[0], params[-1])
 
     def set_bold(self, value):
         """
@@ -406,20 +410,27 @@ class EpsonProcessor(object):
                         else:
                             params.append(parm)
                 elif count == "NLDK":
-                    logger.debug("NLDK")
-                    data = []
+                    logger.debug("NLDK %s", byte)
+                    
+                    params = []
                     nL = int.from_bytes(self.printfile.read(1), "big") # 
                     logger.debug("nL:%s", nL)
                     nH = int.from_bytes(self.printfile.read(1), "big") # 
                     logger.debug("nH:%s", nH)
                     graphcols = nH * 256 + nL
-                    logger.debug("graphcols:%s", graphcols)
+
                     i = 0
+                    quick = False # ESC Y skips every other dot (urgh)
+                    this_byte = None
+                    if byte in [b'Y']:
+                        quick = True
+                    logger.debug("q:%s graphcols:%s", quick, graphcols)
                     while i < int(graphcols):
                         # get d1..dk
-                        data.append(self.printfile.read(1))
+                        this_byte = self.printfile.read(1)
+                        params.append(this_byte)
                         i = i + 1
-                    logger.debug("Got %d bytes graphics data", len(data))
+                    logger.debug("Got %d bytes graphics data", len(params))
                     
                 self.escape_state = False
                 self.handle_command(byte, params)
