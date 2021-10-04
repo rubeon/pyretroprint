@@ -1,19 +1,9 @@
-# NOTE
+There are some things it can do:
 
-PyRetroPrint is in pretty early stages of development. This documentation is
-aspirational for now. There are some things it can do:
-
-FX-80 and Compatibles
-
-* Convert files to PDF
-* Print files to the terminal
-* Send those files to an IPP "everywhere" printer
-* Be used as a pipe for [AtariSIO][asio]'s `atariserver`
-* Print directly from Atari 800XL to e.g. CUPS-compatible printers
-
-These things take a little bit of work, but already scratch an itch.
 
 # PyRetroPrint
+
+![PyRetroPrint, your Atari Print Button!](docs/px/doc2pdf.png)
 
 Welcome to PyRetroPrint, your one-stop shop for Reagan-era hardcopy!
 
@@ -25,6 +15,17 @@ This utility is designed be used in a printing pipeline from obsolete
 software.  Anything that is equipped to print to an Epson FX-80 IBM
 Proprinter, or HP Laserjet I or II can now use your modern CUPS-supported
 printer, or simply output PDF documents.
+
+Atari 825, FX-80 and Compatibles
+
+* Convert files to PDF
+* Print files to the terminal
+* Send those files to an IPP "everywhere" printer
+* Be used as a pipe for [AtariSIO][asio]'s `atariserver`
+* Print directly from Atari 800XL to e.g. CUPS-compatible printers
+
+These things take a little bit of work, but already scratch an itch.
+
 
 ## Installation
 
