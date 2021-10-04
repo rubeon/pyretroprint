@@ -38,7 +38,7 @@ class BasePresenter(object):
     default_page_size = "A4"    
     cur_page = 0
     dpi = 300
-    linespacing = 1
+    linespacing = 12
     font_height = 8
     page_lines = None
     superscript = False
@@ -144,6 +144,9 @@ class BasePresenter(object):
         raise NotImplementedError
 
     def set_hpos(self, pos):
+        raise NotImplementedError
+        
+    def backspace(self, numspaces=1):
         raise NotImplementedError
 
 class color:
@@ -279,7 +282,7 @@ class PdfPresenter(BasePresenter):
     stretch_y = 1.0
     x = 0
     y = 0
-    linespacing = 2 # 0.25 default font?
+    linespacing = 120 # 0.25 default font?
     
     def __init__(self, **kwargs):
         """
@@ -467,13 +470,17 @@ class PdfPresenter(BasePresenter):
         self.italic = value
 
     def set_proportional(self, value):
+        logger.debug("pdf::set_proportional entered with %s", value)
         if value:
+            logger.debug("pdf::setting sans-serif")
             self.ctx.select_font_face("sans-serif")
         else:
-            self.ctx.select_font_face("monospace")
+            logger.debug("pdf::setting %s", self.default_font_family)
+            self.ctx.select_font_face(self.default_font_family)
 
     def set_linespacing(self, value):
-        self.linespacing = value - self.font_size
+        logger.debug("pdf::set_linespacing entered with %s", value)
+        self.linespacing = value - self.font_size + 2
     
     def save(self):
         self.ctx.show_page()
@@ -484,6 +491,13 @@ class PdfPresenter(BasePresenter):
     def set_condensed(self, value):
         logger.debug("pdf::set_condensed entered with %s", value)
         self.stretch_x = value and 0.5 or 1.0
+    
+    def backspace(self, value):
+        """
+        moves back x. em-spaces
+        """
+        logger.debug("pdf::backspace entered")
+        self.x = self.x - value * self.em
 
 class HtmlPresenter(BasePresenter):
     default_font_family = "monospace"
