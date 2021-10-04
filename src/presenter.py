@@ -37,6 +37,7 @@ class BasePresenter(object):
     page_list = []
     default_page_size = "A4"    
     cur_page = 0
+    dpi = 300
     linespacing = 1
     font_height = 8
     page_lines = None
@@ -243,6 +244,14 @@ class PlainTextPresenter(BasePresenter):
         """
         """
         pass
+
+    def set_low_quality(self, value):
+        logger.debug("plaintext::set_low_value entered with %s", value)
+
+    def set_charset(self, value):
+        """
+        """
+        logger.debug("plaintext::charset entered with %s", value)
         
 class TerminalPresenter(BasePresenter):
     """

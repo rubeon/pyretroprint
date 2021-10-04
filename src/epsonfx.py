@@ -66,6 +66,8 @@ class EpsonProcessor(object):
         "3": 1,
         "-": 1,
         "S": 1,
+        "L": "NLDK",
+        "Y": "NLDK",
         "D": None, # NUL terminated
         
     }
@@ -152,9 +154,9 @@ class EpsonProcessor(object):
             msg = "Set n/180-inch line spacing"
             self.set_linespacing(params[0], 180)
             return
-        elif command == "Y":
+        elif command == "Y" or command == "L":
             msg = "Set 120 dpi double-speed graphics"
-            self.set_120dpi()
+            self.set_dpi(120)
             return
         elif command == "4":
             msg = "Set italic"
@@ -171,7 +173,7 @@ class EpsonProcessor(object):
     
         elif command == "Z":
             msg = "Set 240 dpi graphics"
-            self.set_240dpi()
+            self.set_dpi(240)
             return
         elif command == "5":
             msg = "Cancel italic"
@@ -337,20 +339,13 @@ class EpsonProcessor(object):
         linespacing = 72.0/value # value in points
         self.presenter.set_linespacing(linespacing)
 
-    def set_120dpi(self):
+    def set_dpi(self, value):
         """
         """
         # not really relevant on a virtual printer...
-        logger.debug("epson::set_120dpi entered")
-        pass
+        logger.debug("epson::set_dpi entered with %s", value)
+        self.presenter.dpi = value
 
-    def set_240dpi(self):
-        """
-        """
-        # not really relevant on a virtual printer...
-        logger.debug("epson::set_240dpi entered")
-        pass
-        
     def set_bold(self, value):
         """
         """
@@ -394,7 +389,7 @@ class EpsonProcessor(object):
                 params = []
                 count = self.params_count.get(byte.decode("cp850"), 0)
                 
-                while count:
+                while count and count not in  ["NLDK",]:
                     params.append(int.from_bytes(self.printfile.read(1), "big"))
                     count = count - 1
                     
@@ -403,11 +398,27 @@ class EpsonProcessor(object):
                     # read params until it's NUL
                     parm = None
                     while True:
-                        parm = printfile.read(1)
+                        parm = self.printfile.read(1)
                         if parm == b'\x00':
                             break
                         else:
                             params.append(parm)
+                elif count == "NLDK":
+                    logger.debug("NLDK")
+                    data = []
+                    nL = int.from_bytes(self.printfile.read(1), "big") # 
+                    logger.debug("nL:%s", nL)
+                    nH = int.from_bytes(self.printfile.read(1), "big") # 
+                    logger.debug("nH:%s", nH)
+                    graphcols = nH * 256 + nL
+                    logger.debug("graphcols:%s", graphcols)
+                    i = 0
+                    while i < int(graphcols):
+                        # get d1..dk
+                        data.append(self.printfile.read(1))
+                        i = i + 1
+                    logger.debug("Got %d bytes graphics data", len(data))
+                    
                 self.escape_state = False
                 self.handle_command(byte, params)
             elif byte == b'\x1b':
