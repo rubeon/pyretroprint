@@ -3,11 +3,51 @@ Main file for pyretroprint
 """
 import sys
 import argparse
+import io
+import logging
+
 from pyretroprint.epsonfx import EpsonProcessor
 # from pyretroprint.ibm import ProprinterProcessor
 from pyretroprint.atari import AtariProcessor
 from pyretroprint.presenter import PdfPresenter
 from pyretroprint.presenter import PlainTextPresenter
+
+LOGGER = logging.getLogger(__name__)
+
+class PrintOutFile:
+    """
+    Context manager for handling output files
+    """
+    filename = None
+    file = None
+    def __init__(self, printfile):
+        """
+        setup
+        """
+        # if this is buffered writer, return it
+        LOGGER.debug("printoutfile: __init__ called (%s)", printfile)
+        if isinstance(printfile, io.BufferedWriter) or printfile is None:
+            LOGGER.debug("printoutfile: Detected io.BufferedWriter")
+            self.file = sys.stdout.buffer
+        # if it's a pathlike, return binary handle
+        elif isinstance(printfile, str):
+            LOGGER.debug("printoutfile: Detected filename")
+            self.filename = printfile
+        else:
+            LOGGER.debug("printoutfile: Couldn't detect filetype")
+            self.file = sys.stdout.buffer
+
+    def __enter__(self):
+        """
+        called when context manager started
+        """
+        LOGGER.debug("printoutfile: __enter__ called (%s)", self.file)
+        if self.filename:
+            self.file = open(self.filename, 'wb')
+        return self.file
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        LOGGER.debug("printoutfile: exc_type %s", exc_type)
 
 def main():
     """
@@ -43,14 +83,14 @@ def main():
         sys.stderr.flush()
         sys.exit(1)
 
+    fdoutput = sys.stdout.buffer
+
     if args.output:
         if args.output == "-":
-            fdoutput = sys.stdout.buffer
+            pass
         else:
             fdoutput = args.output
-    else:
-        fdout = sys.stdout.buffer
-
+    LOGGER.debug("main::Using output %s", fdoutput)
     if args.input:
         fdinput = args.input
     else:
@@ -61,8 +101,9 @@ def main():
     else:
         pres = PlainTextPresenter
 
-    with open(fdinput, 'rb') as fdin, open(fdoutput, 'wb') as fdout:
-        processor = proc(fdin, pres(size=args.size, fdout=fdout))
+    with open(fdinput, 'rb') as infile, PrintOutFile(args.output) as outfile:
+        processor = proc(infile, pres(size=args.size, fdout=outfile))
         processor.process()
+
 if __name__=="__main__":
     main()

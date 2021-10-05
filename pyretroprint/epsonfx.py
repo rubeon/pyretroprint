@@ -363,14 +363,14 @@ class EpsonProcessor(object):
         """
         logger.debug("epson::set_hpos entered")
         
-        nl = params[0]
-        nh = params[1]
+        nL = params[0]
+        nH = params[1]
         
         lm = self.presenter.page.margin_l
         # lm = self.presenter.page_list[self.presenter.cur_page].margin_l
         du = self.defined_unit
         
-        hpos = (((nh * 256) + nl) * du) + lm
+        hpos = (((nH * 256) + nL) * du) + lm
         logger.debug("Setting hpos to %s", hpos)
         self.presenter.set_hpos(hpos)
 
