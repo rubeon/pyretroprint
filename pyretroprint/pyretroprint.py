@@ -97,6 +97,7 @@ def main():
         fdinput = 0 # stdin
 
     if args.presenter.lower()=="pdf":
+        LOGGER.debug("prp::using pdf")
         pres = PdfPresenter
     else:
         pres = PlainTextPresenter
@@ -104,6 +105,8 @@ def main():
     with open(fdinput, 'rb') as infile, PrintOutFile(args.output) as outfile:
         processor = proc(infile, pres(size=args.size, fdout=outfile))
         processor.process()
+        print(processor.presenter)
+
 
 if __name__=="__main__":
     main()

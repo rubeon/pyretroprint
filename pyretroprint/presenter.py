@@ -179,7 +179,7 @@ class PlainTextPresenter(BasePresenter):
         self.separator = kwargs.get("separator", "\f")
 
     def new_page(self, size):
-        logger.debug("pdf::new_page entered with %s", size)
+        logger.debug("plaintext::new_page entered with %s", size)
         new_page = None
         if size == "Letter":
             new_page = LetterPage()
@@ -190,6 +190,7 @@ class PlainTextPresenter(BasePresenter):
         self.cur_page = len(self.page_list) - 1
 
     def add_text(self, byte):
+        logger.debug("plaintext::add_text entered")
         if type(byte) == type(b""):
             byte = byte.decode(DEFAULT_CHARSET)
         if byte == "\n":
@@ -200,6 +201,7 @@ class PlainTextPresenter(BasePresenter):
     def set_bold(self, value):
         """
         """
+        logger.debug("plaintext::set_bold entered")
         if value:
             self.add_text(color.BOLD)
         else:
@@ -213,6 +215,7 @@ class PlainTextPresenter(BasePresenter):
     def set_underline(self, value):
         """
         """
+        logger.debug("plaintext::set_underline entered with %s", value)
         if value:
             self.add_text(color.UNDERLINE)
         else:
@@ -221,29 +224,34 @@ class PlainTextPresenter(BasePresenter):
     def __str__(self):
         return "\f".join([t.text for t in self.page_list])
     
-    def set_hpos(self, hpos):
+    def set_hpos(self, value):
         """
         workaround for now
         """
+        logger.debug("plaintext::set_hpos entered with %s", value)
         self.add_text(" ")
     
     def linefeed(self):
         """
         """
+        logger.debug("plaintext::linefeed entered")
         self.add_text("\n")
 
     def carriage_return(self):
+        logger.debug("plaintext::cr entered")
         self.add_text("\r")
     
     def set_linespacing(self, linespacing):
         """
         set my linespacing in points
         """
+        logger.debug("plaintext::linespacing entered")
         self.linespacing = self.linespacing
     
     def set_font_size(self, *args):
         """
         """
+        logger.debug("plaintext::set_font_size entered")
         pass
 
     def set_low_quality(self, value):
