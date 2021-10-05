@@ -146,7 +146,7 @@ class AtariProcessor(object):
             LOGGER.debug("atari::set_cpi setting 10 pt")
             self.presenter.set_font_size(10)
         else:
-            print(value)
+            LOGGER.warn("atari::set_cpi called with unhandled value %s", value)
             sys.exit(1)
         self.presenter.stretch_x = 1.0        
         self.presenter.set_proportional(0)

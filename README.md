@@ -18,9 +18,9 @@ printer, or simply output PDF documents.
 
 Atari 825, FX-80 and Compatibles
 
-* Convert files to PDF
-* Print files to the terminal
-* Send those files to an IPP "everywhere" printer
+* Output PRN files or streams to PDF
+* Print formatted text to the terminal
+* Send PDF output to networked printers
 * Be used as a pipe for [AtariSIO][asio]'s `atariserver`
 * Print directly from Atari 800XL to e.g. CUPS-compatible printers
 
@@ -34,20 +34,36 @@ PyRetroPrint can be installed using [pip][pip]:
 	pip install pyretroprint
 ```
 
+For development versions (recommended):
+
+```bash
+	python3 -mvenv prptest
+	cd prptest
+	. bin/activate
+	pip install cairo
+	pip install -i https://test.pypi.org/simple/ pyretroprint
+```
+
 ## How to Use
 
 Once the software is installed, simply pipe output of your prints to the
 main script:
 
 ```bash
-	|pyretroprint --default-printer epson --prettify
+	|pyretroprint -p pdf -o /tmp/myretroprint.pdf
 ```
 
-`--default-printer` will tell PyRetroPrint which printer to use if
-autodetect fails.
+`--input` or `-i`, specifies the source PRN file (defaults to `stdin`).
 
-`--prettify` will try to replace single- and double- quotes and other
-characters with typographically attractive replacements.
+`--size` or `-s`, sets A4 or Letter sizes, defaults to A4.
+
+`--printer` or `-P` will tell PyRetroPrint which printer type to emulate.
+
+`--presenter` or `-p` determines which output type to use: `pdf` or `terminal`
+which prints formatted text to the terminal (default).
+
+`--output` or `-o`, specifies the destination file (defaults to
+`default.pdf` for PDF, or `stdout` for terminal).
 
 ## Philosophy
 
@@ -61,3 +77,4 @@ might have on a computer or piece of software specced out before 1990.
 
 [awplus]:https://www.atarimagazines.com/compute/issue72/review_atariwriter_plus.php
 [pip]:https://pypi.org/
+[asio]:https://github.com/HiassofT/AtariSIO

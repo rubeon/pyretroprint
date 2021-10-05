@@ -13,7 +13,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
     name='pyretroprint', 
-    version='0.1.5',
+    version='0.1.6rc1',
     description='PyRetroPrint: Dot-Matrix Emulation for our Bleak Dystopian Future!',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -33,7 +33,7 @@ setup(
     install_requires=['pycairo'],
     entry_points={  # Optional
         'console_scripts': [
-            'pyretroprint=pyretroprint:main',
+            'pyretroprint=pyretroprint.pyretroprint:main',
         ],
     },
     

@@ -3,8 +3,8 @@ import sys
 import os
 import logging
 
-from presenter import PlainTextPresenter, PdfPresenter, HtmlPresenter
-import page
+from pyretroprint.presenter import PlainTextPresenter, PdfPresenter, HtmlPresenter
+import pyretroprint.page
 
 ESCAPE = 0x1b
 
@@ -77,11 +77,11 @@ class EpsonProcessor(object):
     
     defined_unit = 72.0 / 60.0 # 1 / 60 in. in points
     
-    def __init__(self, pf, my_presenter, size="Letter"):
+    def __init__(self, pf, presenter, size="Letter"):
         """
         """
         self.printfile = pf
-        self.presenter = my_presenter # initialized presenter
+        self.presenter = presenter # initialized presenter
         self.initialize_printer()
 
     def handle_command(self, byte, params):

@@ -11,7 +11,7 @@ logging.basicConfig(format=FORMAT)
 
 DEFAULT_CHARSET="cp850"
 
-from page import LetterPage, A4Page
+from .page import LetterPage, A4Page
 
 """
 Thoughts:
@@ -290,7 +290,10 @@ class PdfPresenter(BasePresenter):
         """
         """
         size = kwargs.get("size", self.default_page_size)
-        self.filename = kwargs.get("filename", "default.pdf")
+        # self.filename = kwargs.get("filename", "default.pdf")
+        self.fd = kwargs.get("fdout")
+        logger.debug("pdf::init using %s", self.fd)
+        logger.debug("pdf::init kwargs %s", kwargs)
         self.font_family = self.default_font_family
         self.font_size = self.default_font_size
         self.proportional = self.default_proportional
@@ -307,7 +310,8 @@ class PdfPresenter(BasePresenter):
         
 
         # set up cairo stuff
-        self.ps = cairo.PDFSurface(self.filename, self.page.width, self.page.height)
+        # self.ps = cairo.PDFSurface(self.fd or self.filename, self.page.width, self.page.height)
+        self.ps = cairo.PDFSurface(self.fd, self.page.width, self.page.height)
         self.ctx = cairo.Context(self.ps)
         self.ctx.select_font_face(self.font_family)
         self.ctx.set_font_size(self.font_size)
@@ -369,19 +373,11 @@ class PdfPresenter(BasePresenter):
                 self.new_page()
                 return
             else:
-                print(text)
+                logger.warn("Not adding text: %s", text)
             logger.debug("Can't print character %s", byte)
             return
 
         self.set_font()        
-
-        # try:
-        #     self.font_extents = self.ctx.text_extents(text)
-        # except:
-        #     print(text)
-        #     input("meh")
-
-        # x_advance = self.stretch_x * self.font_extents.x_advance
         x_advance = self.get_x_advance(text)
         
         if (self.x + x_advance > self.page.width - self.page.margin_r):
@@ -502,6 +498,9 @@ class PdfPresenter(BasePresenter):
         """
         logger.debug("pdf::backspace entered")
         self.x = self.x - value * self.em
+    
+    def __del__(self, *args, **kwargs):
+        self.fd.flush()
 
 class HtmlPresenter(BasePresenter):
     default_font_family = "monospace"
