@@ -66,6 +66,7 @@ class EpsonProcessor(object):
         "3": 1,
         "-": 1,
         "S": 1,
+        "J": 1,
         "L": "NLDK",
         "Y": "NLDK",
         "Z": "NLDK",
@@ -193,9 +194,21 @@ class EpsonProcessor(object):
             msg = "Select superscript/subscript printing"
             self.set_supersub(params[0])
             return
+        elif command == "J":
+            msg = "Advance print position vertically"
+            self.move_v(params[0], 180) # J is 180 dpi
+            return
         else:
             msg = "ESC %s not handled" % command
         logger.debug("Not handled: ESC %s %s %s", command, params, msg)
+
+    def move_v(self, value, dpi):
+        """
+        Advances the vertical print position n/216 in.
+        """
+        logger.debug("epson::move_v entered with %s", value)
+        advance = value / dpi * 72 # value in points
+        self.presenter.y = self.presenter.y + advance
 
     def set_page_lines(self, value):
         """
@@ -342,16 +355,61 @@ class EpsonProcessor(object):
         linespacing = 72.0/value  # value in points
         self.presenter.set_linespacing(linespacing)
 
+    def draw_dot(self, x, y, width):
+        """
+        puts a 1-point dot on the paper at x,y
+        """
+        logger.debug("epson::draw_dot at %s, %s, %s", x, y, width)
+        # self.presenter.ctx.move_to(x, y)
+        # self.presenter.ctx.line_to(x + dot_pitch/2, y)
+        self.presenter.ctx.set_line_width(1)
+        self.presenter.ctx.rectangle(x, y, width, width)
+        self.presenter.ctx.stroke()
+        # back to starting point
+        # self.presenter.ctx.move_to(x,y)
+        
+        
     def set_dpi(self, value, params):
         """
+        Puts params[] bytes onto page at value DPI
+        TODO: this should be renamed to print bitmap
+        or similar
         """
         # not really relevant on a virtual printer...
         logger.debug("epson::set_dpi entered with %s", value)
         self.presenter.dpi = value
         logger.debug("%s bytes of data for %s", len(params), value)
+        # advance = 1 / value * 72 	# estimated DPI?
+        advance_x = 1 / value * 72
+        advance_y = 1 / 72 * 72		# from epson docs (240x72)
+        start_x = self.presenter.x + self.presenter.page.margin_l
+        start_y = self.presenter.y + self.presenter.page.margin_t
+        x = start_x
+        y = start_y
+        logger.debug("start_x, start_y: %s,%s|dx:%s, dy:%s", start_x, start_y, advance_x, advance_y)
+        mask = 0
+                
         if len(params):
-            logger.debug("%s...%s", params[0], params[-1])
+            logger.debug("processing %s params", len(params))
+            row = 0	# row
+            col = 0	# col
+            for p in params:
+                # process each byte
+                gmask = int.from_bytes(p, "big")
 
+                for i in range(8):
+                    logger.debug("x:{:.2f} y:{:.2f} byte: 0b{:08b} ({})".format(x, y, gmask, gmask))
+                    128 & gmask and self.draw_dot(x, y, advance_x / 2)
+                    gmask = gmask << 1 & 255 # keep it at 8 bits
+                    y = y + 0.9
+
+                x = x + advance_x
+                y = start_y
+                logger.debug("row:%s, x:%s", row, x)
+                    
+        # save position
+        self.presenter.x = x
+        self.presenter.y = y            
     def set_bold(self, value):
         """
         """
@@ -415,10 +473,15 @@ class EpsonProcessor(object):
                     params = []
                     nL = int.from_bytes(self.printfile.read(1), "big") # 
                     logger.debug("nL:%s", nL)
-                    nH = int.from_bytes(self.printfile.read(1), "big") # 
+                    nH = int.from_bytes(self.printfile.read(1), "big")
                     logger.debug("nH:%s", nH)
                     graphcols = nH * 256 + nL
-
+                    
+                    logger.debug("graphcols: %s", graphcols)
+                    # following are nH * 256 + nL columns
+                    # so guess each column is 72 dots high?
+                    # that would be 9 bytes high...
+                    # so the 
                     i = 0
                     quick = False # ESC Y skips every other dot (urgh)
                     this_byte = None
@@ -446,6 +509,7 @@ class EpsonProcessor(object):
                 break
             # check for some control codes
             elif byte == b'\x9b':
+                logger.debug("9b encountered, linefeed")
                 self.presenter.newline()
                 [f(False) for f in self.clear_on_line]
                 self.clear_on_line = []

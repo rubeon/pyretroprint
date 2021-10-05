@@ -3,6 +3,7 @@ import sys
 import math
 import cairo
 import logging
+import inspect
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -100,6 +101,11 @@ class BasePresenter(object):
     def newline(self):
         """
         """
+        logger.debug("base::newline entered")
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        logger.debug('caller name: %s', calframe[1][3])
+
         self.carriage_return()
         self.linefeed()
 
@@ -239,6 +245,10 @@ class PlainTextPresenter(BasePresenter):
 
     def carriage_return(self):
         logger.debug("plaintext::cr entered")
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        logger.debug('caller name: %s', calframe[1][3])
+        
         self.add_text("\r")
     
     def set_linespacing(self, linespacing):
@@ -332,12 +342,22 @@ class PdfPresenter(BasePresenter):
     def newline(self):
         """
         """
+        logger.debug("pdf::newline entered")
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        logger.debug('caller name: %s', calframe[1][3])
+        
         self.carriage_return()
         self.linefeed()
 
     def carriage_return(self):
         """
         """
+        logger.debug("pdf::carriage_return entered")
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        logger.debug('caller name: %s', calframe[1][3])
+
         self.x = 0   
         self.cur_line = self.cur_line + 1
         if self.cur_line and self.cur_line > self.page_lines:
@@ -366,6 +386,7 @@ class PdfPresenter(BasePresenter):
 
     def add_text(self, byte):
         # do some text handling...
+        logger.debug("pdf::add_text entered '0x%s'", ord(byte))
         text = byte.decode(DEFAULT_CHARSET)
         if 0x00 <= ord(text) < 0x1f:
             if text == "\n":
@@ -374,9 +395,9 @@ class PdfPresenter(BasePresenter):
             elif text == "\r":
                 self.carriage_return()
                 return
-            elif text == "\f":
-                self.new_page()
-                return
+            # elif text == "\f":
+            #     self.new_page()
+            #     return
             else:
                 logger.warn("Not adding text: %s", text)
             logger.debug("Can't print character %s", byte)
@@ -386,9 +407,10 @@ class PdfPresenter(BasePresenter):
         x_advance = self.get_x_advance(text)
         
         if (self.x + x_advance > self.page.width - self.page.margin_r):
-            self.newline()
-            self.carriage_return()
-            self.linefeed()
+            logger.debug("pdf:: reached margin")
+            # self.newline()
+            # self.carriage_return()
+            # self.linefeed()
         scale_modifier = 1.0
         if self.superscript:
             # move up a litte
@@ -412,7 +434,7 @@ class PdfPresenter(BasePresenter):
             self.ctx.stroke()
         self.ctx.restore()
         self.x = self.x + x_advance
-        logger.debug("T:'%s' x:%s, y:%s p:%s x_adv: %s b:'%s' l:%s ln:%s/%s lsp:%s x<->:%s y<->:%s sm:%s sub:%s sup:%s" % (text, int(self.x), int(self.y), self.proportional, int(x_advance), self.bold, self.line_height, self.cur_line, self.page_lines, self.linespacing, self.stretch_x, self.stretch_y, scale_modifier, self.superscript, self.subscript))
+        logger.debug("pdf::addtext T:'%s' x:%s, y:%s p:%s x_adv: %s b:'%s' l:%s ln:%s/%s lsp:%s x<->:%s y<->:%s sm:%s sub:%s sup:%s" % (text, int(self.x), int(self.y), self.proportional, int(x_advance), self.bold, self.line_height, self.cur_line, self.page_lines, self.linespacing, self.stretch_x, self.stretch_y, scale_modifier, self.superscript, self.subscript))
 
     def get_x_advance(self, text, proportional=True):
         """
