@@ -1,6 +1,3 @@
-There are some things it can do:
-
-
 # PyRetroPrint
 
 ![PyRetroPrint, Your Atari Print Button!](https://raw.githubusercontent.com/rubeon/pyretroprint/main/docs/px/doc2pdf.png)
@@ -16,16 +13,13 @@ software.  Anything that is equipped to print to an Epson FX-80 IBM
 Proprinter, or HP Laserjet I or II can now use your modern CUPS-supported
 printer, or simply output PDF documents.
 
-Atari 825, FX-80 and Compatibles
+For applications that support Atari 825, FX-80 and Compatibles, you can:
 
-* Output PRN files or streams to PDF
+* Render PRN files or streams to PDF
 * Print formatted text to the terminal
 * Send PDF output to networked printers
 * Be used as a pipe for [AtariSIO][asio]'s `atariserver`
 * Print directly from Atari 800XL to e.g. CUPS-compatible printers
-
-These things take a little bit of work, but already scratch an itch.
-
 
 ## Installation
 

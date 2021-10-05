@@ -408,8 +408,7 @@ class EpsonProcessor(object):
                         parm = self.printfile.read(1)
                         if parm == b'\x00':
                             break
-                        else:
-                            params.append(parm)
+                        params.append(parm)
                 elif count == "NLDK":
                     logger.debug("NLDK %s", byte)
                     
