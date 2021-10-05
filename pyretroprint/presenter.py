@@ -178,9 +178,6 @@ class PlainTextPresenter(BasePresenter):
         self.new_page(size)        
         self.separator = kwargs.get("separator", "\f")
 
-    def __del__(self):
-        self.outfile.write(str(self))
-
     def new_page(self, size):
         logger.debug("pdf::new_page entered with %s", size)
         new_page = None
@@ -499,9 +496,6 @@ class PdfPresenter(BasePresenter):
         logger.debug("pdf::backspace entered")
         self.x = self.x - value * self.em
     
-    def __del__(self, *args, **kwargs):
-        self.fd.flush()
-
 class HtmlPresenter(BasePresenter):
     default_font_family = "monospace"
     body = ""

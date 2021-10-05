@@ -3,8 +3,9 @@ import sys
 import os
 import logging
 
-from presenter import PlainTextPresenter, PdfPresenter
-import page
+from pyretroprint.presenter import PlainTextPresenter, PdfPresenter
+from pyretroprint.page import LetterPage, A4Page
+
 
 ESCAPE =  b'\x1b'
 DEFAULT_CODEPAGE="cp850"
@@ -228,6 +229,7 @@ class AtariProcessor(object):
 
 if __name__=="__main__":
     # getopt etc.
+
     printfile = open(sys.argv[-1], 'rb')
     print("Reading", sys.argv[-1])
     print("Processing for PDF")
