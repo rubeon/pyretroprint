@@ -12,7 +12,7 @@ logging.basicConfig(format=FORMAT)
 
 DEFAULT_CHARSET="cp850"
 
-from .page import LetterPage, A4Page
+from .page import LetterPage, A4Page, TerminalPage
 
 """
 Thoughts:
@@ -35,6 +35,8 @@ class BasePresenter(object):
     """
     Abstract class for presenter objects
     """
+    x = 0
+    y = 0
     page_list = []
     default_page_size = "A4"    
     cur_page = 0
@@ -179,6 +181,7 @@ class PlainTextPresenter(BasePresenter):
     def __init__(self, **kwargs):
         """
         """
+        self.page = TerminalPage()
         self.outfile = kwargs.get('outfile', sys.stdout)
         size = kwargs.get("size", self.default_page_size)
         self.new_page(size)        

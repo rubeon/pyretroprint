@@ -35,6 +35,62 @@ class EpsonProcessor(object):
     """
     clear_on_line = []
     escape_state = None
+    dot_density = {
+        0: {
+            "hdpi": 60,
+            "vdpi": 72,
+            "adj": True,
+            "vres": 8 
+        },
+        1: {
+            "hdpi": 120,
+            "vdpi": 72,
+            "adj": True,
+            "vres": 8 
+        },
+        2: {
+            "hdpi": 120,
+            "vdpi": 72,
+            "adj": False,
+            "vres": 8 
+        },
+        3: {
+            "hdpi": 240,
+            "vdpi": 72,
+            "adj": False,
+            "vres": 8 
+        },
+        4: {
+            "hdpi": 80,
+            "vdpi": 72,
+            "adj": True,
+            "vres": 8 
+        },
+        5: {
+            "hdpi": 72,
+            "vdpi": 72,
+            "adj": True,
+            "vres": 8 
+        },
+        6: {
+            "hdpi": 90,
+            "vdpi": 72,
+            "adj": True,
+            "vres": 8 
+        },
+        7: {
+            "hdpi": 144,
+            "vdpi": 72,
+            "adj": True,
+            "vres": 8 
+        },
+        33: {
+            "hdpi": 120,
+            "vdpi": 180,
+            "adj": True,
+            "vres": 24 
+        }
+    }
     commands = {
         "%": {
                 "params_count": 1,
@@ -67,9 +123,11 @@ class EpsonProcessor(object):
         "-": 1,
         "S": 1,
         "J": 1,
+        "K": "NLDK",
         "L": "NLDK",
         "Y": "NLDK",
         "Z": "NLDK",
+        "*": "MNLDK",
         "A": 1,
         "D": None, # NUL terminated
         
@@ -162,9 +220,20 @@ class EpsonProcessor(object):
             msg = "Set n/72-inch line spacing"
             self.set_linespacing(params[0], 72)
             return
-        elif command == "Y" or command == "L":
-            msg = "Set 120 dpi double-speed graphics"
-            self.set_dpi(120, params)
+        elif command == "Y":
+            msg = "Set 120 x 72 dpi double-speed graphics" 
+            # C-187, eq. ESC * 2
+            self.select_bit_image(120, 60, True, 8, params)
+            return
+        elif command == "K":
+            msg = "Select 60-dpi graphics"
+            # C-183, eq. ESC * 0
+            self.select_bit_image(60, 60, True, 8, params)
+            return
+        elif command == "L":
+            msg = "Set 120 x 60 dpi graphics"
+            # self.set_dpi(120, 60, params)
+            self.select_bit_image(120, 60, True, 8, params)
             return
         elif command == "4":
             msg = "Set italic"
@@ -172,16 +241,19 @@ class EpsonProcessor(object):
             return
         elif command == "G":
             msg = "Set doublestrike"
+            # disabling for now, wordperfect seems like it has a bug?
             self.set_bold(1)
-            return
+            # return
         elif command == "H":
             msg = "Cancel doublestrike"
             self.set_bold(0)
             return
-    
         elif command == "Z":
-            msg = "Set 240 dpi graphics %s bytes" % (len(params))
-            self.set_dpi(240, params)
+            msg = "Set 240 x 60 dpi graphics %s bytes" % (len(params)) 
+            # C-189, eq. ESC * 3
+            # self.set_dpi(240, 60, params)
+            # logger.debug(msg)
+            self.select_bit_image(240, 60, False, 8, params)
             return
         elif command == "5":
             msg = "Cancel italic"
@@ -203,6 +275,16 @@ class EpsonProcessor(object):
             msg = "Advance print position vertically"
             self.move_v(params[0], 180) # J is 180 dpi
             return
+        elif command == "*":
+            msg = "Select bit image"
+            mode = params[0]
+            hdpi = self.dot_density[mode]["hdpi"]
+            vdpi = self.dot_density[mode]["vdpi"]
+            adj = self.dot_density[mode]["adj"]
+            vres = self.dot_density[mode]["vres"]
+            # self.select_bit_image(hdpi, vdpi, adj, vres, params[1:])
+            self.select_bit_image(120, 180, True, 24, params[1:])
+            return            
         else:
             msg = "ESC %s not handled" % command
         logger.debug("Not handled: ESC %s %s %s", command, params, msg)
@@ -218,6 +300,7 @@ class EpsonProcessor(object):
     def set_page_lines(self, value):
         """
         """
+        return # FIXME
         self.page_lines = value
         self.presenter.page_lines = value
 
@@ -268,7 +351,7 @@ class EpsonProcessor(object):
     def set_lq(self, value):
         """
         """
-        logger.debug("epson::set_lq entered")
+        logger.debug("epson::set_lq entered with %s", value)
         value in [0, 48] and self.presenter.set_low_quality(1)
         value in [1, 49] and self.presenter.set_low_quality(0)
 
@@ -290,7 +373,7 @@ class EpsonProcessor(object):
         
 
     def set_double_width(self, value):
-        logger.debug("epson::set_double_width entered")
+        logger.debug("epson::set_double_width entered with %s", value)
         if value:
             self.presenter.stretch_x = 2.0
         else:
@@ -364,7 +447,7 @@ class EpsonProcessor(object):
         """
         puts a 1-point dot on the paper at x,y
         """
-        logger.debug("epson::draw_dot at %s, %s, %s", x, y, width)
+        logger.debug("epson::draw_dot at %.2f, %.2fs, %s", x, y, width)
         # self.presenter.ctx.move_to(x, y)
         # self.presenter.ctx.line_to(x + dot_pitch/2, y)
         self.presenter.ctx.set_line_width(1)
@@ -373,20 +456,54 @@ class EpsonProcessor(object):
         # back to starting point
         # self.presenter.ctx.move_to(x,y)
         
+    def select_bit_image(self, hdpi, vdpi, adj, vres, bytes):
+        """
+        hdpi = horizontal density
+        vdpi = vertical density
+        adj = adjacent dot printing?
+        vres = dots per column, 8, 24, or 48
+        """
+        logger.debug("epson::select_bit_image h:%s v:%s a:%s vr:%s", hdpi, vdpi, adj, vres)
         
-    def set_dpi(self, value, params):
+        advance_x = 1 / hdpi * 72       # hdpi in points
+        advance_y = 1 / vdpi * 72       # vdpi in points
+        
+        start_x = self.presenter.x + self.presenter.page.margin_l
+        start_y = self.presenter.y + self.presenter.page.margin_t
+        x = start_x
+        y = start_y
+        logger.debug("start_x, start_y: %s,%s|dx:%s, dy:%s", start_x, start_y, advance_x, advance_y)
+        
+        if len(bytes):
+            logger.debug("processing %s bytes", len(bytes))
+            row = 0
+            for b in bytes:
+                gmask = int.from_bytes(b, "big")
+                # need to account for multibyte.. damn
+                for i in range(8):
+                    128 & gmask and self.draw_dot(x, y, advance_x / 3)
+                    gmask = gmask << 1 & 255
+                    y = y + advance_y
+                    row = row + 1
+                if row >= vres-1:
+                    x = x + advance_x
+                    y = start_y
+                    row = 0
+                logger.debug("x:%.2f y:%.2f", x, y)
+            
+            self.presenter.x = x
+            self.presenter.y = y
+                
+    def set_dpi(self, hdpi, vdpi, params):
         """
         Puts params[] bytes onto page at value DPI
         TODO: this should be renamed to print bitmap
         or similar
         """
         # not really relevant on a virtual printer...
-        logger.debug("epson::set_dpi entered with %s", value)
-        self.presenter.dpi = value
-        logger.debug("%s bytes of data for %s", len(params), value)
-        # advance = 1 / value * 72 	# estimated DPI?
-        advance_x = 1 / value * 72
-        advance_y = 1 / 72 * 72		# from epson docs (240x72)
+        logger.debug("epson::set_dpi entered with %sx%s (%s bytes)",hdpi, vdpi, len(params))
+        advance_x = 1 / hdpi * 72
+        advance_y = 1 / vdpi * 72
         start_x = self.presenter.x + self.presenter.page.margin_l
         start_y = self.presenter.y + self.presenter.page.margin_t
         x = start_x
@@ -396,29 +513,30 @@ class EpsonProcessor(object):
                 
         if len(params):
             logger.debug("processing %s params", len(params))
-            row = 0	# row
-            col = 0	# col
+            row = 0 # row
+            col = 0 # col
             for p in params:
                 # process each byte
                 gmask = int.from_bytes(p, "big")
 
                 for i in range(8):
-                    logger.debug("x:{:.2f} y:{:.2f} byte: 0b{:08b} ({})".format(x, y, gmask, gmask))
+                    # logger.debug("x:{:.2f} y:{:.2f} byte: 0b{:08b} ({})".format(x, y, gmask, gmask))
                     128 & gmask and self.draw_dot(x, y, advance_x / 2)
                     gmask = gmask << 1 & 255 # keep it at 8 bits
                     y = y + 0.9
 
                 x = x + advance_x
                 y = start_y
-                logger.debug("row:%s, x:%s", row, x)
+                logger.debug("row:%s, x:%.2f", row, x)
                     
         # save position
         self.presenter.x = x
         self.presenter.y = y            
+
     def set_bold(self, value):
         """
         """
-        logger.debug("epson::set_bold entered")
+        logger.debug("epson::set_bold entered with %s", value)
         self.presenter.set_bold(value)
     
     def set_hpos(self, params):
@@ -459,7 +577,7 @@ class EpsonProcessor(object):
                 params = []
                 count = self.params_count.get(byte.decode("cp850"), 0)
                 
-                while count and count not in  ["NLDK",]:
+                while count and count not in  ["NLDK", "MNLDK"]:
                     params.append(int.from_bytes(self.printfile.read(1), "big"))
                     count = count - 1
                     
@@ -472,10 +590,12 @@ class EpsonProcessor(object):
                         if parm == b'\x00':
                             break
                         params.append(parm)
-                elif count == "NLDK":
-                    logger.debug("NLDK %s", byte)
+                elif count in ["NLDK","MNLDK"]:
+                    logger.debug("(M)NLDK %s", byte)
                     
                     params = []
+                    if count == "MNLDK":
+                        params.append(int.from_bytes(self.printfile.read(1), "big")) # m
                     nL = int.from_bytes(self.printfile.read(1), "big") # 
                     logger.debug("nL:%s", nL)
                     nH = int.from_bytes(self.printfile.read(1), "big")
@@ -513,8 +633,8 @@ class EpsonProcessor(object):
             elif byte == b'':
                 break
             # check for some control codes
-            elif byte == b'\x9b':
-                logger.debug("9b encountered, linefeed")
+            elif byte in [b'\x9b', b'\x0a']:
+                logger.debug("9b/0a encountered, linefeed")
                 self.presenter.newline()
                 [f(False) for f in self.clear_on_line]
                 self.clear_on_line = []

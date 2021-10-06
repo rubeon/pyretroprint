@@ -53,7 +53,9 @@ class A4Page(Page):
     height = 72 * 11.69 # points high
     width = 72 * 8.27 # points wide
 
-
+class TerminalPage(Page):
+    height = 72 * 25
+    width = 72 * 80
      
 if __name__=="__main__":
     a4 = A4Page()
