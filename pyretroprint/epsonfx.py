@@ -70,6 +70,7 @@ class EpsonProcessor(object):
         "L": "NLDK",
         "Y": "NLDK",
         "Z": "NLDK",
+        "A": 1,
         "D": None, # NUL terminated
         
     }
@@ -156,6 +157,10 @@ class EpsonProcessor(object):
         elif command == "3":
             msg = "Set n/216-inch line spacing"
             self.set_linespacing(params[0], 216)
+            return
+        elif command == "A":
+            msg = "Set n/72-inch line spacing"
+            self.set_linespacing(params[0], 72)
             return
         elif command == "Y" or command == "L":
             msg = "Set 120 dpi double-speed graphics"
