@@ -395,9 +395,9 @@ class PdfPresenter(BasePresenter):
             elif text == "\r":
                 self.carriage_return()
                 return
-            # elif text == "\f":
-            #     self.new_page()
-            #     return
+            elif text == "\f":
+                self.new_page()
+                return
             else:
                 logger.warn("Not adding text: %s", text)
             logger.debug("Can't print character %s", byte)

@@ -345,7 +345,7 @@ class EpsonProcessor(object):
     def set_italic(self, value):
         """
         """
-        logger.debug("epson::set_italic entered")
+        logger.debug("epson::set_italic entered with %s", value)
         self.presenter.set_italic(value)
     
     def set_lpi(self, value):
